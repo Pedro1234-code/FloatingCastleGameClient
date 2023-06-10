@@ -1,2 +1,1 @@
-# FloatingCastleGameClient
-An in-development UWP Game Client for my WIP Game "The Floating Castle"
+# FloatingCastleGameClientAn in-development UWP Game Client for my WIP Game "The Floating Castle"## Features:- Check for Game Data updates- Check for Client Updates- Check Game Data file integrity (CRC32)- Auto load gameThis is in-development, will be updated more eventually in respects to UI.
