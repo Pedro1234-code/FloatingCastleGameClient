@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Utils.ExceptionHelper;
 using Windows.ApplicationModel;
@@ -23,6 +24,11 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Windows.UI.Xaml.Hosting;
+using Windows.Devices.Lights;
+using Windows.UI.Xaml.Shapes;
+
+
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -53,9 +59,14 @@ namespace FloatingCastle_Client
         {
             this.InitializeComponent();
             RPGTest.Classes.WindowManager.EnterFullScreen(true);
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = AppViewBackButtonVisibility.Visible;
+            SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = AppViewBackButtonVisibility.Visible;
 
             Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
+            Windows.UI.Composition.Visual visual = ElementCompositionPreview.GetElementVisual(GamePlayer);
+            Windows.UI.Composition.Compositor compositor = visual.Compositor;
+            Windows.UI.Composition.SpriteVisual spriteVisual = compositor.CreateSpriteVisual();
+            ElementCompositionPreview.SetElementChildVisual(GamePlayer, spriteVisual);
+            ElementCompositionPreview.SetIsTranslationEnabled(GamePlayer, true);
             App.globalWebView = GamePlayer;
             INSTALLED_DATA_VERSION = localSettings.Values["GameDataVersion"].ToString();
             Package pkg = Package.Current;
@@ -101,11 +112,17 @@ namespace FloatingCastle_Client
             e.Handled = true;
             if (ClientUpdateGrid.Visibility != Visibility.Visible)
             {
-                ClientMenu.Visibility = Visibility.Visible;
+                if (Windows.System.Profile.AnalyticsInfo.VersionInfo.DeviceFamily == "Windows.Xbox")
+                {
+                    ClientMenu.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    ClientMenu.Visibility = Visibility.Visible;
+                }
             }
 
         }
-
         public async void CheckForFiles()
         {
             FileProgressbar.IsIndeterminate = true;
@@ -170,7 +187,8 @@ namespace FloatingCastle_Client
             GamePlayer.Navigate(new Uri(@"ms-appdata:///local/FloatingCastleData/index.html"));
         }
 
-       
+
+
 
 
         private async void CheckPackageMetadata()
@@ -188,11 +206,50 @@ namespace FloatingCastle_Client
 
             if (CURRENT_PKG_VERSION != CLIENT_VERSION)
             {
-                FileProgressInfo.Text = $"[Client Update Required] Version: {CLIENT_VERSION}  CRC: {CLIENT_CRC}  Address: {CLIENT_UPDATE_ADDRESS}";
-                PatchButton.IsEnabled = true;
-                FileProgressbar.IsIndeterminate = false;
-                FileProgressbar.Value = 0;
-                StartClientUpdate();
+                if (Windows.System.Profile.AnalyticsInfo.VersionInfo.DeviceFamily == "Windows.Xbox")
+                {
+                    {
+                        ContentDialog dialog = new ContentDialog
+                        {
+                            Title = "Client Update Available",
+                            Content = "There is a new client update available. Please download it.",
+                            PrimaryButtonText = "OK",
+                            XamlRoot = this.XamlRoot
+                        };
+
+                        ContentDialogMaker.CreateContentDialog(dialog, awaitPreviousDialog: true);
+                    }
+
+                }
+            }
+
+
+            if (Windows.System.Profile.AnalyticsInfo.VersionInfo.DeviceFamily == "Windows.Desktop")
+            {
+                if (CURRENT_PKG_VERSION != CLIENT_VERSION)
+                {
+                    FileProgressInfo.Text = $"[Client Update Required] Version: {CLIENT_VERSION}  CRC: {CLIENT_CRC}  Address: {CLIENT_UPDATE_ADDRESS}";
+                    PatchButton.IsEnabled = true;
+                    FileProgressbar.IsIndeterminate = false;
+                    FileProgressbar.Value = 0;
+                    StartClientUpdate();
+                }
+            }
+
+            if (Windows.System.Profile.AnalyticsInfo.VersionInfo.DeviceFamily == "Windows.Mobile")
+            {
+                if (CURRENT_PKG_VERSION != CLIENT_VERSION)
+                {
+                    FileProgressInfo.Text = $"[Client Update Required] Version: {CLIENT_VERSION}  CRC: {CLIENT_CRC}  Address: {CLIENT_UPDATE_ADDRESS}";
+                    PatchButton.IsEnabled = true;
+                    FileProgressbar.IsIndeterminate = false;
+                    FileProgressbar.Value = 0;
+                    StartClientUpdate();
+                }
+            }
+
+            {
+
             }
 
             if (INSTALLED_DATA_VERSION != GAME_DATA_VERSION)
@@ -229,7 +286,8 @@ namespace FloatingCastle_Client
                 cancellationToken = new CancellationTokenSource();
                 PatchButton.IsEnabled = false;
                 await downloadOperation.StartAsync().AsTask(cancellationToken.Token, progress);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Exceptions.ThrownExceptionError(ex);
             }
@@ -255,7 +313,7 @@ namespace FloatingCastle_Client
             Stream dataStream = await GameData.OpenStreamForReadAsync();
 
             CRC32 crc32 = new CRC32();
-            string crc = await crc32.ComputeHash(dataStream);
+            string crc = crc32.ComputeHash(dataStream);
             NEW_CRC = crc;
             if (isClientUpdate == true)
             {
@@ -300,10 +358,10 @@ namespace FloatingCastle_Client
             {
 
 
-                var fileName = Path.GetFileName(item);
+                string fileName = System.IO.Path.GetFileName(item);
                 var storageFile = await StorageFile.GetFileFromPathAsync(item);
                 var stream = await storageFile.OpenStreamForReadAsync();
-                var fileCRC = await crc32.ComputeHash(stream);
+                var fileCRC = crc32.ComputeHash(stream);
                 var CheckText = $"{fileName},{fileCRC}";
                 Debug.WriteLine($"{fileName},{fileCRC}");
                 if (hashList.Contains(CheckText))
@@ -379,7 +437,7 @@ namespace FloatingCastle_Client
                 }
             }
 
-            public async Task<string> ComputeHash(Stream stream)
+            public string ComputeHash(Stream stream)
             {
                 uint result = 0xFFFFFFFF;
 
@@ -420,13 +478,14 @@ namespace FloatingCastle_Client
 
 
             string AppxUpdateName = "FloatingCastleClient.appxbundle";
-        var options = new Windows.System.LauncherOptions();
+            var options = new Windows.System.LauncherOptions();
             options.PreferredApplicationPackageFamilyName = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe";
             options.PreferredApplicationDisplayName = "App Installer";
             FileProgressInfo.Text = "Attempting to Install Update Package, Please Wait";
             await Windows.System.Launcher.LaunchFileAsync(await Windows.Storage.ApplicationData.Current.LocalCacheFolder.GetFileAsync(AppxUpdateName), options);
 
         }
+
 
 
         /// <summary>
@@ -491,7 +550,6 @@ namespace FloatingCastle_Client
                     {
                         FileProgressInfo.Text = "Package Verification Completed, PKG CRC: " + NEW_CRC;
                         downloadOperation = null;
-                    ExtractClientUpdate();
 
                     }
                     else
@@ -592,7 +650,8 @@ namespace FloatingCastle_Client
                 "[Credits]\n" +
                 "Empyreal96 - Game, Client\n" +
                 "Bashar Astifan - RPG Save Manager Plugin");
-            } else
+            }
+            else
             {
                 Exceptions.CustomException("[Controls]\n" +
                 "Left Click = Move/Activate/Select\n" +

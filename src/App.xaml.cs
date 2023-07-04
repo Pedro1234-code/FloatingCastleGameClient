@@ -36,6 +36,7 @@ namespace FloatingCastle_Client
         public App()
         {
             this.InitializeComponent();
+            this.RequiresPointerMode = Windows.UI.Xaml.ApplicationRequiresPointerMode.WhenRequested;
             this.Suspending += OnSuspending;
             
             if (!localSettings.Values.ContainsKey("GameDataVersion"))
@@ -110,6 +111,8 @@ namespace FloatingCastle_Client
 
                 // Place the frame in the current Window
                 Window.Current.Content = rootFrame;
+                Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().IsScreenCaptureEnabled = true;
+
             }
 
             if (e.PrelaunchActivated == false)

@@ -14,7 +14,7 @@
   <mp:PhoneIdentity PhoneProductId="cae9f0b6-0dd5-40da-b698-4c65500af8bb" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>FloatingCastle_Client</DisplayName>
+    <DisplayName>The Floating Castle - game client</DisplayName>
     <PublisherDisplayName>Empyreal96</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -32,16 +32,17 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="FloatingCastle_Client.App">
       <uap:VisualElements
-        DisplayName="Floating Castle Client"
+        DisplayName="The Floating Castle - game client"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
-        Description="FloatingCastle_Client"
+        Description="The Floating Castle - made with RPG Maker MV by Empyreal96. Game client now on Xbox!"
         BackgroundColor="transparent">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"/>
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
         <uap:InitialRotationPreference>
           <uap:Rotation Preference="landscape"/>
           <uap:Rotation Preference="landscapeFlipped"/></uap:InitialRotationPreference>
+        <uap:LockScreen BadgeLogo="Assets\BadgeLogo.png" Notification="badge"/>
       </uap:VisualElements>
       <Extensions>
         <uap:Extension Category="windows.protocol">
